@@ -1,4 +1,5 @@
 {
+  "manifest_version": 1,
   "name": "Card Initiative Tracker",
   "version": "1.0.0",
   "icon": "https://static.thenounproject.com/png/20461-200.png",
