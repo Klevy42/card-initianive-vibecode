@@ -1,15 +1,10 @@
 {
   "name": "Card Initiative Tracker",
   "version": "1.0.0",
-  "manifest_version": 1,
-  "author": "Your Name",
-  "icon": "https://static.thenounproject.com/png/20461-200.png",
-  "description": "Initiative tracker using a 54-card deck with jokers.",
+  "icon": "https://owlbear.rodeo",
   "action": {
     "title": "Card Initiative",
-    "icon": "https://static.thenounproject.com/png/20461-200.png",
-    "popover": "index.html",
-    "height": 600,
-    "width": 400
+    "view": "index.html",
+    "icon": "https://owlbear.rodeo"
   }
 }
