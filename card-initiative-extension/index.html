@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <script src="https://unpkg.com/@owlbear-rodeo/sdk@latest/dist/index.umd.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 10px; }
+    button { margin: 5px 0; width: 100%; }
+    .token { padding: 5px; border-bottom: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h2>Card Initiative</h2>
+
+  <button id="deal">Раздать карты</button>
+  <button id="clear">Удалить всех</button>
+  <button id="addToken">Добавить выбранный токен</button>
+
+  <h3>Инициатива:</h3>
+  <div id="initiative"></div>
+
+<script>
+const OBR = window.OBR;
+
+let initiative = [];
+let deck = [];
+
+// ----- СОЗДАНИЕ КОЛОДЫ -----
+function createDeck() {
+  const suits = ["♠", "♥", "♦", "♣"];
+  const values = [
+    {name: "2", rank: 2},
+    {name: "3", rank: 3},
+    {name: "4", rank: 4},
+    {name: "5", rank: 5},
+    {name: "6", rank: 6},
+    {name: "7", rank: 7},
+    {name: "8", rank: 8},
+    {name: "9", rank: 9},
+    {name: "10", rank: 10},
+    {name: "J", rank: 11},
+    {name: "Q", rank: 12},
+    {name: "K", rank: 13},
+    {name: "A", rank: 14}
+  ];
+
+  deck = [];
+
+  suits.forEach((suit, suitIndex) => {
+    values.forEach(value => {
+      deck.push({
+        label: `${value.name} ${suit}`,
+        rank: value.rank,
+        suitRank: 4 - suitIndex // Пики старше
+      });
+    });
+  });
+
+  // Джокеры (самые старшие)
+  deck.push({ label: "Joker 🃏", rank: 15, suitRank: 2 });
+  deck.push({ label: "Joker 🃏", rank: 15, suitRank: 1 });
+}
+
+// ----- ПЕРЕМЕШИВАНИЕ -----
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+// ----- СОРТИРОВКА -----
+function sortInitiative() {
+  initiative.sort((a, b) => {
+    if (b.card.rank === a.card.rank) {
+      return b.card.suitRank - a.card.suitRank;
+    }
+    return b.card.rank - a.card.rank;
+  });
+}
+
+// ----- ОБНОВЛЕНИЕ UI -----
+function render() {
+  const container = document.getElementById("initiative");
+  container.innerHTML = "";
+
+  initiative.forEach(entry => {
+    const div = document.createElement("div");
+    div.className = "token";
+    div.textContent = `${entry.name} — ${entry.card.label}`;
+    container.appendChild(div);
+  });
+}
+
+// ----- ДОБАВИТЬ ВЫБРАННЫЙ ТОКЕН -----
+document.getElementById("addToken").onclick = async () => {
+  const selected = await OBR.player.getSelection();
+  if (!selected.length) return;
+
+  const items = await OBR.scene.items.getItems(selected);
+
+  items.forEach(item => {
+    initiative.push({
+      id: item.id,
+      name: item.name || "Token",
+      card: null
+    });
+  });
+
+  render();
+};
+
+// ----- РАЗДАТЬ КАРТЫ (ТОЛЬКО ДЛЯ GM) -----
+document.getElementById("deal").onclick = async () => {
+  const role = await OBR.player.getRole();
+  if (role !== "GM") {
+    alert("Только мастер может раздавать карты!");
+    return;
+  }
+
+  createDeck();
+  shuffle(deck);
+
+  initiative.forEach((entry, index) => {
+    entry.card = deck[index];
+  });
+
+  sortInitiative();
+  render();
+};
+
+// ----- УДАЛИТЬ ВСЕХ (ТОЛЬКО GM) -----
+document.getElementById("clear").onclick = async () => {
+  const role = await OBR.player.getRole();
+  if (role !== "GM") {
+    alert("Только мастер может очищать инициативу!");
+    return;
+  }
+
+  initiative = [];
+  render();
+};
+
+OBR.onReady(() => {
+  console.log("Card Initiative Extension Ready");
+});
+</script>
+</body>
+</html>

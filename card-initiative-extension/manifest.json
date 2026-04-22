@@ -1,0 +1,15 @@
+{
+  "name": "Card Initiative Tracker",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "author": "Your Name",
+  "icon": "",
+  "description": "Initiative tracker using a 54-card deck with jokers.",
+  "action": {
+    "title": "Card Initiative",
+    "icon": "",
+    "popover": "index.html",
+    "height": 600,
+    "width": 400
+  }
+}
