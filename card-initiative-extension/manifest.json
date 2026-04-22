@@ -1,10 +1,10 @@
 {
   "name": "Card Initiative Tracker",
   "version": "1.0.0",
-  "icon": "https://owlbear.rodeo",
+  "icon": "https://static.thenounproject.com/png/20461-200.png",
   "action": {
     "title": "Card Initiative",
     "view": "index.html",
-    "icon": "https://owlbear.rodeo"
+    "icon": "https://static.thenounproject.com/png/20461-200.png"
   }
 }
