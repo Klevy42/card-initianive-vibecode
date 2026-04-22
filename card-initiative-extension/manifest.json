@@ -7,7 +7,7 @@
   "description": "Initiative tracker using a 54-card deck with jokers.",
   "action": {
     "title": "Card Initiative",
-    "icon": "",
+    "icon": "https://static.thenounproject.com/png/20461-200.png",
     "popover": "index.html",
     "height": 600,
     "width": 400
