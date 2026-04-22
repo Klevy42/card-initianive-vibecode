@@ -2,10 +2,10 @@
   "manifest_version": 1,
   "name": "Card Initiative Tracker",
   "version": "1.0.0",
-  "icon": "https://static.thenounproject.com/png/20461-200.png",
+  "icon": "https://thenounproject.com",
   "action": {
     "title": "Card Initiative",
-    "view": "index.html",
-    "icon": "https://static.thenounproject.com/png/20461-200.png"
+    "popover": "index.html",
+    "icon": "https://thenounproject.com"
   }
 }
