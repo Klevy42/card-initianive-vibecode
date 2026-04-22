@@ -1,67 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <script src="https://unpkg.com/@owlbear-rodeo/sdk@latest/dist/index.umd.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 10px; }
-    button { margin: 5px 0; width: 100%; }
-    .token { padding: 5px; border-bottom: 1px solid #ccc; }
-  </style>
+<meta charset="UTF-8" />
+<script src="https://unpkg.com/@owlbear-rodeo/sdk@latest/dist/index.umd.js"></script>
+<style>
+body { font-family: sans-serif; padding: 10px; }
+button { width: 100%; margin: 5px 0; padding: 6px; }
+.token { padding: 6px; border-bottom: 1px solid #ccc; }
+.active { background: #ffe082; font-weight: bold; }
+</style>
 </head>
 <body>
-  <h2>Card Initiative</h2>
 
-  <button id="deal">Раздать карты</button>
-  <button id="clear">Удалить всех</button>
-  <button id="addToken">Добавить выбранный токен</button>
+<h2>Card Initiative</h2>
 
-  <h3>Инициатива:</h3>
-  <div id="initiative"></div>
+<button id="deal">🎴 Раздать карты</button>
+<button id="next">➡ Следующий ход</button>
+<button id="clear">🗑 Удалить всех</button>
+<button id="addToken">➕ Добавить выбранный токен</button>
+
+<h3>Инициатива:</h3>
+<div id="initiative"></div>
 
 <script>
 const OBR = window.OBR;
+const STORAGE_KEY = "card-initiative-data";
 
-let initiative = [];
-let deck = [];
+let state = {
+  initiative: [],
+  currentTurn: 0
+};
 
-// ----- СОЗДАНИЕ КОЛОДЫ -----
+let isGM = false;
+
+// ---------- Колода ----------
 function createDeck() {
   const suits = ["♠", "♥", "♦", "♣"];
   const values = [
-    {name: "2", rank: 2},
-    {name: "3", rank: 3},
-    {name: "4", rank: 4},
-    {name: "5", rank: 5},
-    {name: "6", rank: 6},
-    {name: "7", rank: 7},
-    {name: "8", rank: 8},
-    {name: "9", rank: 9},
-    {name: "10", rank: 10},
-    {name: "J", rank: 11},
-    {name: "Q", rank: 12},
-    {name: "K", rank: 13},
-    {name: "A", rank: 14}
+    {n:"2",r:2},{n:"3",r:3},{n:"4",r:4},{n:"5",r:5},
+    {n:"6",r:6},{n:"7",r:7},{n:"8",r:8},{n:"9",r:9},
+    {n:"10",r:10},{n:"J",r:11},{n:"Q",r:12},
+    {n:"K",r:13},{n:"A",r:14}
   ];
 
-  deck = [];
+  let deck = [];
 
   suits.forEach((suit, suitIndex) => {
-    values.forEach(value => {
+    values.forEach(v => {
       deck.push({
-        label: `${value.name} ${suit}`,
-        rank: value.rank,
-        suitRank: 4 - suitIndex // Пики старше
+        label: `${v.n} ${suit}`,
+        rank: v.r,
+        suitRank: 4 - suitIndex
       });
     });
   });
 
-  // Джокеры (самые старшие)
-  deck.push({ label: "Joker 🃏", rank: 15, suitRank: 2 });
-  deck.push({ label: "Joker 🃏", rank: 15, suitRank: 1 });
+  deck.push({ label:"Joker 🃏", rank:15, suitRank:2 });
+  deck.push({ label:"Joker 🃏", rank:15, suitRank:1 });
+
+  return deck;
 }
 
-// ----- ПЕРЕМЕШИВАНИЕ -----
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -69,30 +68,51 @@ function shuffle(array) {
   }
 }
 
-// ----- СОРТИРОВКА -----
 function sortInitiative() {
-  initiative.sort((a, b) => {
-    if (b.card.rank === a.card.rank) {
+  state.initiative.sort((a,b)=>{
+    if (b.card.rank === a.card.rank)
       return b.card.suitRank - a.card.suitRank;
-    }
     return b.card.rank - a.card.rank;
   });
 }
 
-// ----- ОБНОВЛЕНИЕ UI -----
-function render() {
-  const container = document.getElementById("initiative");
-  container.innerHTML = "";
+// ---------- Сохранение ----------
+async function saveState() {
+  await OBR.room.setMetadata({ [STORAGE_KEY]: state });
+}
 
-  initiative.forEach(entry => {
-    const div = document.createElement("div");
-    div.className = "token";
-    div.textContent = `${entry.name} — ${entry.card.label}`;
-    container.appendChild(div);
+async function loadState() {
+  const metadata = await OBR.room.getMetadata();
+  if (metadata[STORAGE_KEY]) {
+    state = metadata[STORAGE_KEY];
+  }
+}
+
+// ---------- UI ----------
+function render() {
+  const div = document.getElementById("initiative");
+  div.innerHTML = "";
+
+  state.initiative.forEach((entry, index) => {
+    const el = document.createElement("div");
+    el.className = "token";
+
+    if (index === state.currentTurn) {
+      el.classList.add("active");
+    }
+
+    let cardText = "🂠";
+
+    if (isGM && entry.card) {
+      cardText = entry.card.label;
+    }
+
+    el.textContent = `${entry.name} — ${cardText}`;
+    div.appendChild(el);
   });
 }
 
-// ----- ДОБАВИТЬ ВЫБРАННЫЙ ТОКЕН -----
+// ---------- Добавить токен ----------
 document.getElementById("addToken").onclick = async () => {
   const selected = await OBR.player.getSelection();
   if (!selected.length) return;
@@ -100,50 +120,71 @@ document.getElementById("addToken").onclick = async () => {
   const items = await OBR.scene.items.getItems(selected);
 
   items.forEach(item => {
-    initiative.push({
-      id: item.id,
-      name: item.name || "Token",
-      card: null
-    });
+    if (!state.initiative.find(e=>e.id===item.id)) {
+      state.initiative.push({
+        id: item.id,
+        name: item.name || "Token",
+        card: null
+      });
+    }
   });
 
-  render();
+  await saveState();
 };
 
-// ----- РАЗДАТЬ КАРТЫ (ТОЛЬКО ДЛЯ GM) -----
+// ---------- Раздать карты ----------
 document.getElementById("deal").onclick = async () => {
-  const role = await OBR.player.getRole();
-  if (role !== "GM") {
-    alert("Только мастер может раздавать карты!");
-    return;
-  }
+  if (!isGM) return alert("Только GM может раздавать!");
 
-  createDeck();
+  let deck = createDeck();
   shuffle(deck);
 
-  initiative.forEach((entry, index) => {
-    entry.card = deck[index];
+  state.initiative.forEach((entry, i)=>{
+    entry.card = deck[i];
   });
 
   sortInitiative();
-  render();
+  state.currentTurn = 0;
+
+  await saveState();
 };
 
-// ----- УДАЛИТЬ ВСЕХ (ТОЛЬКО GM) -----
+// ---------- Следующий ход ----------
+document.getElementById("next").onclick = async () => {
+  if (!state.initiative.length) return;
+
+  state.currentTurn++;
+  if (state.currentTurn >= state.initiative.length)
+    state.currentTurn = 0;
+
+  await saveState();
+};
+
+// ---------- Очистить ----------
 document.getElementById("clear").onclick = async () => {
-  const role = await OBR.player.getRole();
-  if (role !== "GM") {
-    alert("Только мастер может очищать инициативу!");
-    return;
-  }
+  if (!isGM) return alert("Только GM может удалять!");
 
-  initiative = [];
-  render();
+  state = { initiative: [], currentTurn: 0 };
+  await saveState();
 };
 
-OBR.onReady(() => {
-  console.log("Card Initiative Extension Ready");
+// ---------- INIT ----------
+OBR.onReady(async () => {
+
+  const role = await OBR.player.getRole();
+  isGM = role === "GM";
+
+  await loadState();
+  render();
+
+  OBR.room.onMetadataChange((metadata)=>{
+    if (metadata[STORAGE_KEY]) {
+      state = metadata[STORAGE_KEY];
+      render();
+    }
+  });
 });
 </script>
+
 </body>
 </html>
